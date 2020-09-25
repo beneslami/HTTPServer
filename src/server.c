@@ -7,6 +7,7 @@
 #include <netdb.h>
 #include <memory.h>
 #include <errno.h>
+#include <time.h>
 
 #define SERVER_PORT 2000
 char data_buffer[1024];
@@ -14,37 +15,66 @@ char data_buffer[1024];
 #define ANSI_COLOR_RESET   "\x1b[0m"
 
 
+static char*
+set_current_date_time(char *option){
+  time_t t;
+  time(&t);
+  char *temp;
+  char *day;
+  int day_number;
+  char *month;
+  int year;
+  char *current_time;
+  const char delimiter[2] = " ";
+  temp = ctime(&t);
+  day = strtok(temp, delimiter);
+  month = strtok(NULL, delimiter);
+  day_number = atoi(strtok(NULL, delimiter));
+  current_time = strtok(NULL, delimiter);
+  year = atoi(strtok(0, delimiter));
+  char *output = calloc(1, 1024);
+  if(strcmp(option, "date_time")){
+    sprintf(output, "Last-Modified: %s, %d %s %d %s GMT\r\n", day, day_number, month, year, current_time);
+    return output;
+  }
+  else if(strcmp(option, "date")){
+    sprintf(output, "Date: %d %s %d\r\n", day_number, month, year);
+    return output;
+  }
+  return NULL;
+}
+
 static void
 HTTP_header_create(char *header){
   strcpy(header, "HTTP/1.1 200 OK\r\n");                           // Status Line
-  strcat(header, "Date: 25 Sep 2020\r\n");                         // General Headers
+  strcat(header, set_current_date_time("date"));                         // General Headers
   strcat(header, "Connection: close\r\n");
   strcat(header, "Server: My Personal HTTP Server\r\n");           //Response Headers
   strcat(header, "Accept-Ranges: bytes\r\n");
   strcat(header, "Content-Type: text/html\r\n");                   //Entity Headers
-  strcat(header, "Content-Length: \r\n");
-  strcat(header, "Last-Modified: \r\n");
+  //strcat(header, "Content-Length: 242\r\n");
+  strcat(header, set_current_date_time("date_time"));
   strcat(header, "\r\n");
 }
 
 static void
 HTML_create(char *response, char *token){
   strcpy(response, "<html>"
-                      "<head>"
-                      "<title>HTML Response</title>"
-                      "</head>");
+                   "<h>names</h>"
+                   "<p>");
   strcat(response, token);
+  strcat(response, "</p>");
   strcat(response , "</html>");
 }
 
 static char*
 process_GET_request(char * URL, unsigned int *response_length){
   printf("%s(%u) called with URL = %s\n", __FUNCTION__, __LINE__, URL);
-  char delimiter = '/';
+  char delimiter[2] = "/";
   char *token;
-  token = strtok(NULL, &delimiter);
-  printf("%s\n", token);
+  token = strtok(URL, delimiter);
 
+  printf("%s\n", token);
   char *response = calloc(1, 1024);
   HTML_create(response, token);
   char *header = calloc(1, 248 + strlen(response));
@@ -57,8 +87,7 @@ process_GET_request(char * URL, unsigned int *response_length){
 
 static char*
 process_POST_request(char *URL, unsigned int *response_length){
-  printf("hi from POST\n");
-  return "bbb";
+  return NULL;
 }
 
 

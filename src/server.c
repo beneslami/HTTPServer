@@ -13,10 +13,46 @@ char data_buffer[1024];
 #define ANSI_COLOR_RED     "\x1b[31m"
 #define ANSI_COLOR_RESET   "\x1b[0m"
 
+
+static void
+HTTP_header_create(char *header){
+  strcpy(header, "HTTP/1.1 200 OK\r\n");                           // Status Line
+  strcat(header, "Date: 25 Sep 2020\r\n");                         // General Headers
+  strcat(header, "Connection: close\r\n");
+  strcat(header, "Server: My Personal HTTP Server\r\n");           //Response Headers
+  strcat(header, "Accept-Ranges: bytes\r\n");
+  strcat(header, "Content-Type: text/html\r\n");                   //Entity Headers
+  strcat(header, "Content-Length: \r\n");
+  strcat(header, "Last-Modified: \r\n");
+  strcat(header, "\r\n");
+}
+
+static void
+HTML_create(char *response, char *token){
+  strcpy(response, "<html>"
+                      "<head>"
+                      "<title>HTML Response</title>"
+                      "</head>");
+  strcat(response, token);
+  strcat(response , "</html>");
+}
+
 static char*
 process_GET_request(char * URL, unsigned int *response_length){
-  printf("hi from GET\n");
-  return "aaa";
+  printf("%s(%u) called with URL = %s\n", __FUNCTION__, __LINE__, URL);
+  char delimiter = '/';
+  char *token;
+  token = strtok(NULL, &delimiter);
+  printf("%s\n", token);
+
+  char *response = calloc(1, 1024);
+  HTML_create(response, token);
+  char *header = calloc(1, 248 + strlen(response));
+  HTTP_header_create(header);
+  strcat(header, response);
+  *response_length = strlen(header);
+  free(response);
+  return header;
 }
 
 static char*
@@ -121,6 +157,8 @@ main(void){
           sent_recv_bytes = sendto(comm_socket_fd, response, response_length, 0, (struct sockaddr *)&client_addr, sizeof(struct sockaddr));
           free(response);
           printf("server has sent %d bytes in reply to the client"ANSI_COLOR_RED " %s:%u\n" ANSI_COLOR_RESET, sent_recv_bytes, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+          close(comm_socket_fd);
+          break;
         }
       }
     }
